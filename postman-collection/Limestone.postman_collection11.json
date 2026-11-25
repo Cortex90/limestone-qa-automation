@@ -1,0 +1,330 @@
+{
+  "info": {
+    "name": "Limestone - Part 2 API Contracts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run all three requests in order with the Limestone environment. ALL automated tests, schemas and reusable validation live in Collection > Scripts > Post-response. Requests contain no test scripts. Expected HTTP statuses: 200, 200, 404. The third request targets a missing resource: receiving 404 makes its test PASS. Every returned user/post is schema-validated, userId is selected and stored, and all posts must belong to it. No API key is required."
+  },
+  "variable": [
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "missingPostId",
+      "value": "999999",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Reset selection on each full run, preventing stale IDs from hiding an upstream failure.",
+          "if (pm.info.requestName === '01 - List users and select user') {",
+          "  pm.collectionVariables.unset('userId');",
+          "} else if (pm.info.requestName === '02 - List posts for selected user') {",
+          "  const userId = Number(pm.collectionVariables.get('userId'));",
+          "  if (!Number.isInteger(userId) || userId < 1) {",
+          "    throw new Error('Run request 01 first to select a valid user.');",
+          "  }",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// All response contracts and reusable validation live here, once per collection.",
+          "const userSchema = {",
+          "  \"type\": \"object\",",
+          "  \"required\": [",
+          "    \"id\",",
+          "    \"name\",",
+          "    \"username\",",
+          "    \"email\",",
+          "    \"address\",",
+          "    \"phone\",",
+          "    \"website\",",
+          "    \"company\"",
+          "  ],",
+          "  \"properties\": {",
+          "    \"id\": {",
+          "      \"type\": \"integer\",",
+          "      \"minimum\": 1",
+          "    },",
+          "    \"name\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    },",
+          "    \"username\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    },",
+          "    \"email\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$\"",
+          "    },",
+          "    \"address\": {",
+          "      \"type\": \"object\",",
+          "      \"required\": [",
+          "        \"street\",",
+          "        \"suite\",",
+          "        \"city\",",
+          "        \"zipcode\",",
+          "        \"geo\"",
+          "      ],",
+          "      \"properties\": {",
+          "        \"street\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"suite\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"city\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"zipcode\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"geo\": {",
+          "          \"type\": \"object\",",
+          "          \"required\": [",
+          "            \"lat\",",
+          "            \"lng\"",
+          "          ],",
+          "          \"properties\": {",
+          "            \"lat\": {",
+          "              \"type\": \"string\",",
+          "              \"minLength\": 1,",
+          "              \"pattern\": \"\\\\S\"",
+          "            },",
+          "            \"lng\": {",
+          "              \"type\": \"string\",",
+          "              \"minLength\": 1,",
+          "              \"pattern\": \"\\\\S\"",
+          "            }",
+          "          }",
+          "        }",
+          "      }",
+          "    },",
+          "    \"phone\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    },",
+          "    \"website\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    },",
+          "    \"company\": {",
+          "      \"type\": \"object\",",
+          "      \"required\": [",
+          "        \"name\",",
+          "        \"catchPhrase\",",
+          "        \"bs\"",
+          "      ],",
+          "      \"properties\": {",
+          "        \"name\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"catchPhrase\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        },",
+          "        \"bs\": {",
+          "          \"type\": \"string\",",
+          "          \"minLength\": 1,",
+          "          \"pattern\": \"\\\\S\"",
+          "        }",
+          "      }",
+          "    }",
+          "  }",
+          "};",
+          "const postSchema = {",
+          "  \"type\": \"object\",",
+          "  \"required\": [",
+          "    \"id\",",
+          "    \"userId\",",
+          "    \"title\",",
+          "    \"body\"",
+          "  ],",
+          "  \"properties\": {",
+          "    \"id\": {",
+          "      \"type\": \"integer\",",
+          "      \"minimum\": 1",
+          "    },",
+          "    \"userId\": {",
+          "      \"type\": \"integer\",",
+          "      \"minimum\": 1",
+          "    },",
+          "    \"title\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    },",
+          "    \"body\": {",
+          "      \"type\": \"string\",",
+          "      \"minLength\": 1,",
+          "      \"pattern\": \"\\\\S\"",
+          "    }",
+          "  }",
+          "};",
+          "// Collection-level tests run for every request before its own Post-response script.",
+          "const schemasByRequest = {",
+          "  '01 - List users and select user': userSchema,",
+          "  '02 - List posts for selected user': postSchema",
+          "};",
+          "function validateArray(schema) {",
+          "  const body = pm.response.json();",
+          "  pm.test('Response is a non-empty array', function () {",
+          "    pm.expect(body).to.be.an('array').that.is.not.empty;",
+          "  });",
+          "  if (!Array.isArray(body)) return [];",
+          "  body.forEach(function (item, index) {",
+          "    pm.test(`Object ${index + 1} satisfies required non-empty contract`, function () {",
+          "      pm.expect(item).to.have.jsonSchema(schema);",
+          "    });",
+          "  });",
+          "  return body;",
+          "}",
+          "",
+          "const schema = schemasByRequest[pm.info.requestName];",
+          "if (schema) validateArray(schema);",
+          "",
+          "// Scenario assertions also run at collection level; requests contain no test scripts.",
+          "if (pm.info.requestName === \"01 - List users and select user\") {",
+          "  pm.test('HTTP status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "  });",
+          "  pm.test('Select a user and save userId as a collection variable', function () {",
+          "    const users = pm.response.json();",
+          "    pm.expect(users).to.be.an('array').that.is.not.empty;",
+          "    const userId = users[0].id;",
+          "    pm.expect(userId).to.be.a('number');",
+          "    pm.expect(Number.isInteger(userId) && userId > 0).to.equal(true);",
+          "    pm.collectionVariables.set('userId', userId);",
+          "    pm.expect(Number(pm.collectionVariables.get('userId'))).to.equal(userId);",
+          "  });",
+          "}",
+          "else if (pm.info.requestName === \"02 - List posts for selected user\") {",
+          "  pm.test('HTTP status is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "  });",
+          "  pm.test('Every post belongs to the stored userId', function () {",
+          "    const posts = pm.response.json();",
+          "    const userId = Number(pm.collectionVariables.get('userId'));",
+          "    pm.expect(Number.isInteger(userId) && userId > 0, 'Run users request first').to.equal(true);",
+          "    pm.expect(posts).to.be.an('array').that.is.not.empty;",
+          "    posts.forEach(function (post, index) {",
+          "      pm.expect(post.userId, `Post at index ${index}`).to.equal(userId);",
+          "    });",
+          "  });",
+          "}",
+          "else if (pm.info.requestName === \"03 - Get missing post\") {",
+          "  pm.test('HTTP status is 404', function () {",
+          "    pm.response.to.have.status(404);",
+          "  });",
+          "  pm.test('Missing post returns an empty JSON object', function () {",
+          "    pm.expect(pm.response.json()).to.deep.equal({});",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - List users and select user",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - List posts for selected user",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/posts?userId={{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{userId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Get missing post",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{missingPostId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts",
+            "{{missingPostId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
